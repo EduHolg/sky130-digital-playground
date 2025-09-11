@@ -3,9 +3,11 @@
 
 module tb;
 
-  // --- Power supplies for GL sims (required with -DUSE_POWER_PINS)
-  wire vccd1 = 1'b1;  // 1.8 V
-  wire vssd1 = 1'b0;  // GND
+  // Power pins for gate-level sims when GL_TEST is defined
+`ifdef GL_TEST
+  wire VPWR = 1'b1;
+  wire VGND = 1'b0;
+`endif
 
   // DUT I/O
   reg  [7:0] ui_in;
@@ -17,11 +19,11 @@ module tb;
   reg        clk;
   reg        rst_n;
 
-  // Instantiate DUT (module name must match gate_level_netlist.v)
+  // Instantiate DUT (module name must match your netlist top)
   tt_um_digital_playground dut (
-`ifdef USE_POWER_PINS
-    .vccd1 (vccd1),
-    .vssd1 (vssd1),
+`ifdef GL_TEST
+    .VPWR (VPWR),
+    .VGND (VGND),
 `endif
     .ui_in (ui_in),
     .uo_out(uo_out),
@@ -37,13 +39,13 @@ module tb;
   initial clk = 1'b0;
   always #10 clk = ~clk; // 20 ns period
 
-  // Reset task (hold longer + settle after release to clear X at GL)
+  // Reset task (extra hold & settle for GL)
   task reset_dut;
     begin
       rst_n = 1'b0;
-      repeat (10) @(posedge clk);  // was 5
+      repeat (10) @(posedge clk);  // hold reset longer to clear X
       rst_n = 1'b1;
-      repeat (10) @(posedge clk);  // extra settle time
+      repeat (10) @(posedge clk);  // settle after release
     end
   endtask
 
@@ -286,7 +288,8 @@ module tb;
 
   // Test sequence
   initial begin
-    $dumpfile("tt_playground_tb.vcd");
+    // Match CI artifact path/name
+    $dumpfile("tb.vcd");
     $dumpvars(0, tb);
 
     ena    = 1'b1;
