@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
 `default_nettype none
 
-module tb_tt_um_example;
+module tb_tt_digital_playground;
 
   // DUT I/O
   reg  [7:0] ui_in;
