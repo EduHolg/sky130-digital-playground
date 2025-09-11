@@ -1,28 +1,16 @@
-`default_nettype none 
+`default_nettype none
 `timescale 1ns / 1ps
 
-module tb();
+/* This testbench just instantiates the module and makes some convenient wires
+   that can be driven / tested by the cocotb test.py.
+*/
+module tb ();
 
-  // Dump the signals to a VCD file. You can view it with gtkwave.
+  // Dump the signals to a VCD file. You can view it with gtkwave or surfer.
   initial begin
     $dumpfile("tb.vcd");
     $dumpvars(0, tb);
-   
-    // Initialize inputs
-    clk = 0;
-    rst_n = 1;
-    ena = 1;
-    ui_in = 8'b0000_1000; // ui_in[3] = 0, ui_in[0] = 1
-    
-    // Generate pulse signals for ui_in[1] and ui_in[2]
-    repeat (10) begin // Simulate for 10 time units
-      #5 clk = ~clk; // Toggle clock every 5 time units
-      #1 ui_in[1] = 1; // Set ui_in[1] high for 1 time unit
-      #1 ui_in[1] = 0; // Set ui_in[1] low for 1 time unit
-      #1 ui_in[2] = ~ui_in[2]; // Toggle ui_in[2] every 1 time unit
-    end
-    
-    #10; // Wait for 10 time units
+    #1;
   end
 
   // Wire up the inputs and outputs:
@@ -34,14 +22,18 @@ module tb();
   wire [7:0] uo_out;
   wire [7:0] uio_out;
   wire [7:0] uio_oe;
+`ifdef GL_TEST
+  wire VPWR = 1'b1;
+  wire VGND = 1'b0;
+`endif
 
   // Replace tt_um_example with your module name:
-  tt_um_digital_playground tt_um_digital_playground(
+  tt_um_digital_playground user_project (
 
       // Include power ports for the Gate Level test:
 `ifdef GL_TEST
-      .VPWR(1'b1),
-      .VGND(1'b0),
+      .VPWR(VPWR),
+      .VGND(VGND),
 `endif
 
       .ui_in  (ui_in),    // Dedicated inputs
