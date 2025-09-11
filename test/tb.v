@@ -280,7 +280,7 @@ module tb;
   initial begin
     // (XSim writes WDB; VCD calls are optional)
     $dumpfile("tt_playground_tb.vcd");
-    $dumpvars(0, tb_tt_um_example);
+    $dumpvars(0, tb);
 
     ena   = 1'b1;
     ui_in = 8'h00;
