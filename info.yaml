@@ -1,9 +1,9 @@
 # Tiny Tapeout project information
 project:
-  title:        ""      # Project title
-  author:       ""      # Your name
+  title:        "Sky130 Digital Playground"      # Project title
+  author:       "Eduardo Holguin"      # Your name
   discord:      ""      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
-  description:  ""      # One line description of what your project does
+  description:  "Select and test eight classic digital blocks (gates, mux/demux, PWM, 7-seg, 4-bit ALU, FDC, 16×4 RAM, and turn signals) on a single TinyTapeout Sky130 tile."      # One line description of what your project does
   language:     "Verilog" # other examples include SystemVerilog, Amaranth, VHDL, etc
   clock_hz:     0       # Clock frequency in Hz (or 0 if not applicable)
 
