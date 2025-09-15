@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
 // 000 Basic logic gates (bundle)
 //////////////////////////////////////////////////////////////////////////////////
@@ -13,28 +14,20 @@ module gates_basic(
   assign y_not_a= ~a;
 endmodule
 //////////////////////////////////////////////////////////////////////////////////
-// 001 Combined 2:1 MUX + 1:4 DEMUX in one module
+// 001 Replaced block: 8-bit counter
 //////////////////////////////////////////////////////////////////////////////////
-module mux2_demux1to4 (
-  // MUX side
-  input  wire d0,
-  input  wire d1,
-  input  wire sel_mux,
-  output wire y_mux,
-
-  // DEMUX side
-  input  wire din_demux,
-  input  wire [1:0] sel_demux,
-  output wire [3:0] y_demux
+module counter8 #(
+  parameter N = 8
+)(
+  input  wire clk,
+  input  wire rst_n,   // active-low reset
+  input  wire en,      // count enable
+  output reg  [N-1:0] q
 );
-  // 2:1 MUX
-  assign y_mux = sel_mux ? d1 : d0;
-
-  // 1:4 DEMUX
-  assign y_demux = (sel_demux==2'd0) ? {3'b000, din_demux} :
-                   (sel_demux==2'd1) ? {2'b00,  din_demux, 1'b0} :
-                   (sel_demux==2'd2) ? {1'b0,   din_demux, 2'b00} :
-                                       {din_demux, 3'b000};
+  always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) q <= {N{1'b0}};
+    else if (en) q <= q + 1'b1;
+  end
 endmodule
 //////////////////////////////////////////////////////////////////////////////////
 // 010 PWM (counter + comparator)
@@ -178,27 +171,43 @@ endmodule
 // 111 Single-module version of direccionales 
 //////////////////////////////////////////////////////////////////////////////////
 
-// ========================== controller =========================
+// ========================== controller (fixed) =========================
 module controller (
-  input  [1:0] dir,
-  input        clk,       // use clk directly as 1-bit state
+  input  [1:0] dir,   // 00=off, 01=left, 10=right, 11=both
+  input        clk,
   output reg [1:0] left,
   output reg [1:0] right
 );
-  // Map 'clk' into 2-bit form (00 or 01)
-  wire [1:0] state = {1'b0, clk};
+  // state cycles: 01 -> 10 -> 11 -> 01 ...
+  reg [1:0] state;
 
+  // pequeño generador de secuencia cíclica de 3 pasos
+  always @(posedge clk) begin
+    if (dir == 2'b00) begin
+      state <= 2'b00;               // apagado
+    end else if (state == 2'b00) begin
+      state <= 2'b01;               // arranque en 01
+    end else if (state == 2'b01) begin
+      state <= 2'b10;
+    end else if (state == 2'b10) begin
+      state <= 2'b11;
+    end else begin
+      state <= 2'b01;
+    end
+  end
+
+  // routing según dirección
   always @* begin
+    left  = 2'b00;
+    right = 2'b00;
     case (dir)
-      2'b00: begin left = 2'b00; right = 2'b00; end
-      2'b01: begin left = state; right = 2'b00; end
-      2'b10: begin left = 2'b00; right = state; end
-      2'b11: begin left = state; right = state; end
+      2'b01: begin left  = state; right = 2'b00; end // solo izquierda
+      2'b10: begin left  = 2'b00; right = state; end // solo derecha
+      2'b11: begin left  = state; right = state; end // ambos (hazard progresivo)
       default: begin left = 2'b00; right = 2'b00; end
     endcase
   end
 endmodule
-
 
 // ============================ decoder ==========================
 module decoder (
@@ -231,5 +240,3 @@ module direccionales (
   decoder    decoder1  (.in(node2), .out(izq));
   decoder    decoder2  (.in(node3), .out(der));
 endmodule
-
-
