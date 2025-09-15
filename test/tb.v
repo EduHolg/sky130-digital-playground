@@ -46,4 +46,39 @@ module tb ();
       .rst_n  (rst_n)     // not reset
   );
 
+`ifndef COCOTB_SIM
+  // ---------------- Standalone self-check (no cocotb) ----------------
+  // Generate a 100 MHz clock
+  initial clk = 1'b0;
+  always #5 clk = ~clk;
+
+  initial begin
+    // Defaults
+    ena    = 1'b1;
+    ui_in  = 8'h00;
+    uio_in = 8'h00;
+
+    // Reset low for a few cycles
+    rst_n = 1'b0;
+    repeat (10) @(posedge clk);
+    rst_n = 1'b1;
+
+    // MODE = 001 (counter), EN bit3 = 1  -> ui_in = 0b1001 = 9
+    ui_in = 8'd9;
+
+    // Count 15 rising edges
+    repeat (15) @(posedge clk);
+
+    // Check that counter == 15
+    if (uo_out !== 8'd15) begin
+      $display("ERROR: expected 15, got %0d (uo_out=%0h) at t=%0t", uo_out, uo_out, $time);
+      $fatal;
+    end else begin
+      $display("PASS: counter reached 15 as expected at t=%0t", $time);
+    end
+
+    $finish;
+  end
+`endif
+
 endmodule
